@@ -7,7 +7,7 @@ This guide explains how to set up the Google Sheets API integration for the BGSN
 1. **Create a Google Cloud Project**:
    - Go to the [Google Cloud Console](https://console.cloud.google.com/)
    - Create a new project or select an existing one
-   - Note your Project ID
+   - Note your Project ID (bgsnl-dashboard)
 
 2. **Enable the Google Sheets API**:
    - In the Google Cloud Console, navigate to "APIs & Services" > "Library"
