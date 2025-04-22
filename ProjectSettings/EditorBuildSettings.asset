@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Day1/HomeScreen.unity
     guid: 1da498d4026e2fc478f0fa09d19be7bd
+  - enabled: 1
+    path: Assets/Scenes/Day2/CitiesScreen.unity
+    guid: 54cc9ef56cad6c3438e33d2c4c2b95eb
   m_configObjects: {}
