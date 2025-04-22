@@ -15,7 +15,9 @@ public class UIButtonHandler : MonoBehaviour
         DropdownToggle,
         BGSNLHome,
         CitiesScene,
-        CityButton
+        CityButton,
+        ChartsScene,
+        AchievementsScene
     }
 
     [Header("Button Configuration")]
@@ -99,6 +101,14 @@ public class UIButtonHandler : MonoBehaviour
             case ButtonType.CityButton:
                 button.onClick.AddListener(SelectCityAndGoHome);
                 break;
+                
+            case ButtonType.ChartsScene:
+                button.onClick.AddListener(GoToChartsScene);
+                break;
+                
+            case ButtonType.AchievementsScene:
+                button.onClick.AddListener(GoToAchievementsScene);
+                break;
         }
         
         // Log setup for clarity
@@ -180,6 +190,32 @@ public class UIButtonHandler : MonoBehaviour
         SceneManager.LoadScene("CitiesScreen");
     }
     
+    private void GoToChartsScene()
+    {
+        // Close dropdown if it exists
+        if (dropdownMenu != null)
+        {
+            dropdownMenu.SetActive(false);
+        }
+        
+        // Load charts scene
+        LogDebug("[UIButtonHandler] Loading ChartsScreen scene");
+        SceneManager.LoadScene("ChartsScreen");
+    }
+    
+    private void GoToAchievementsScene()
+    {
+        // Close dropdown if it exists
+        if (dropdownMenu != null)
+        {
+            dropdownMenu.SetActive(false);
+        }
+        
+        // Load achievements scene
+        LogDebug("[UIButtonHandler] Loading AchievementsScreen scene");
+        SceneManager.LoadScene("AchievementsScreen");
+    }
+    
     private void SelectCityAndGoHome()
     {
         // Double-check cityId
@@ -212,5 +248,15 @@ public class UIButtonHandler : MonoBehaviour
         // Go to main scene
         LogDebug("[UIButtonHandler] Loading HomeScreen scene");
         SceneManager.LoadScene("HomeScreen");
+    }
+    
+    // Reset to BGSNL when quitting the application to ensure it starts with BGSNL next time
+    private void OnApplicationQuit()
+    {
+        // Force default city on next startup
+        PlayerPrefs.SetInt("ForceDefaultCity", 1);
+        PlayerPrefs.SetString("SelectedCityId", "bgsnl");
+        PlayerPrefs.Save();
+        LogDebug("[UIButtonHandler] Application quitting - Reset preferences to BGSNL for next startup");
     }
 } 

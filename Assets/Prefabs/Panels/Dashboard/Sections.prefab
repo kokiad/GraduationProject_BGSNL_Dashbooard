@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8976017606515494344}
   - component: {fileID: 5444404827643084406}
   m_Layer: 0
-  m_Name: PrSection
+  m_Name: Sections
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

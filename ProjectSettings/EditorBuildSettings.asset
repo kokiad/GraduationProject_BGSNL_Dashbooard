@@ -12,6 +12,12 @@ EditorBuildSettings:
     path: Assets/Scenes/Day1/HomeScreen.unity
     guid: 1da498d4026e2fc478f0fa09d19be7bd
   - enabled: 1
+    path: Assets/Scenes/Day2/ChartsScreen.unity
+    guid: 2e346ab25eb7f614898fcfef74602227
+  - enabled: 1
     path: Assets/Scenes/Day2/CitiesScreen.unity
     guid: 54cc9ef56cad6c3438e33d2c4c2b95eb
+  - enabled: 1
+    path: Assets/Scenes/Day2/AchievementsScreen.unity
+    guid: b1c93e2fceb5569498c6d0469d249759
   m_configObjects: {}

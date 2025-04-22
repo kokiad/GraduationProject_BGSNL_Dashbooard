@@ -754,4 +754,28 @@ public class UIManager : MonoBehaviour
                  $"Attendance: {(averageAttendanceText != null)}, " +
                  $"Events: {(numberOfEventsText != null)}");
     }
+    
+    /// <summary>
+    /// Reset to BGSNL when the application quits to ensure it starts with BGSNL next time
+    /// </summary>
+    private void OnApplicationQuit()
+    {
+        // Force default city on next startup
+        PlayerPrefs.SetInt("ForceDefaultCity", 1);
+        PlayerPrefs.SetString("SelectedCityId", "bgsnl");
+        PlayerPrefs.Save();
+        LogDebug("[UIManager] Application quitting - Reset preferences to BGSNL for next startup");
+    }
+    
+    private void OnApplicationPause(bool pause)
+    {
+        // If pausing the application, also reset (important for mobile builds)
+        if (pause)
+        {
+            PlayerPrefs.SetInt("ForceDefaultCity", 1);
+            PlayerPrefs.SetString("SelectedCityId", "bgsnl");
+            PlayerPrefs.Save();
+            LogDebug("[UIManager] Application paused - Reset preferences to BGSNL for next startup");
+        }
+    }
 } 
