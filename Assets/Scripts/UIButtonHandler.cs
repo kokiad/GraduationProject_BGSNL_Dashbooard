@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// Handles UI button interactions for the BGSNL Dashboard
@@ -29,6 +30,9 @@ public class UIButtonHandler : MonoBehaviour
     [SerializeField] private bool debugMode = true;
     
     private Button button;
+    
+    // Static reference to track active dropdown for touch outside detection
+    private static GameObject activeDropdown;
     
     private void Awake()
     {
@@ -118,12 +122,107 @@ public class UIButtonHandler : MonoBehaviour
         }
     }
     
+    private void Update()
+    {
+        // Check for touches outside dropdown menu
+        if (activeDropdown != null && Input.touchCount > 0)
+        {
+            Touch touch = Input.GetTouch(0);
+            
+            if (touch.phase == TouchPhase.Began)
+            {
+                // Check if touch is outside dropdown and not on UI elements
+                if (!IsPointerOverUIElement(touch.position) || !IsPointerOverDropdown(touch.position))
+                {
+                    CloseActiveDropdown();
+                    LogDebug("[UIButtonHandler] Touched outside dropdown, closing it");
+                }
+            }
+        }
+        
+        // Fallback for testing in editor with mouse clicks
+        #if UNITY_EDITOR
+        if (activeDropdown != null && Input.GetMouseButtonDown(0))
+        {
+            if (!IsPointerOverUIElement(Input.mousePosition) || !IsPointerOverDropdown(Input.mousePosition))
+            {
+                CloseActiveDropdown();
+                LogDebug("[UIButtonHandler] Clicked outside dropdown, closing it");
+            }
+        }
+        #endif
+    }
+    
+    private bool IsPointerOverUIElement(Vector2 screenPosition)
+    {
+        // Check if a UI element is under the pointer
+        PointerEventData eventData = new PointerEventData(EventSystem.current);
+        eventData.position = screenPosition;
+        
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventData, results);
+        
+        return results.Count > 0;
+    }
+    
+    private bool IsPointerOverDropdown(Vector2 screenPosition)
+    {
+        if (activeDropdown == null) return false;
+        
+        // Cast a ray to check if it's over the dropdown
+        PointerEventData eventData = new PointerEventData(EventSystem.current);
+        eventData.position = screenPosition;
+        
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventData, results);
+        
+        foreach (RaycastResult result in results)
+        {
+            // Check if this result is the dropdown or a child of the dropdown
+            if (result.gameObject == activeDropdown || 
+                (result.gameObject.transform.IsChildOf(activeDropdown.transform)))
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private static void CloseActiveDropdown()
+    {
+        if (activeDropdown != null)
+        {
+            activeDropdown.SetActive(false);
+            activeDropdown = null;
+        }
+    }
+    
     private void ToggleDropdownMenu()
     {
         if (dropdownMenu != null)
         {
             bool isActive = dropdownMenu.activeSelf;
+            
+            // If we're opening this dropdown, close any other active one
+            if (!isActive && activeDropdown != null && activeDropdown != dropdownMenu)
+            {
+                activeDropdown.SetActive(false);
+            }
+            
+            // Toggle this dropdown
             dropdownMenu.SetActive(!isActive);
+            
+            // Update the static reference
+            if (!isActive)
+            {
+                activeDropdown = dropdownMenu;
+            }
+            else
+            {
+                activeDropdown = null;
+            }
+            
             LogDebug($"[UIButtonHandler] Toggled dropdown menu: {!isActive}");
         }
         else
@@ -146,6 +245,7 @@ public class UIButtonHandler : MonoBehaviour
         if (dropdownMenu != null)
         {
             dropdownMenu.SetActive(false);
+            activeDropdown = null;
         }
         
         // Try to find UIManager in current scene
@@ -183,6 +283,7 @@ public class UIButtonHandler : MonoBehaviour
         if (dropdownMenu != null)
         {
             dropdownMenu.SetActive(false);
+            activeDropdown = null;
         }
         
         // Load cities scene
@@ -196,6 +297,7 @@ public class UIButtonHandler : MonoBehaviour
         if (dropdownMenu != null)
         {
             dropdownMenu.SetActive(false);
+            activeDropdown = null;
         }
         
         // Load charts scene
@@ -209,6 +311,7 @@ public class UIButtonHandler : MonoBehaviour
         if (dropdownMenu != null)
         {
             dropdownMenu.SetActive(false);
+            activeDropdown = null;
         }
         
         // Load achievements scene
@@ -248,6 +351,15 @@ public class UIButtonHandler : MonoBehaviour
         // Go to main scene
         LogDebug("[UIButtonHandler] Loading HomeScreen scene");
         SceneManager.LoadScene("HomeScreen");
+    }
+    
+    private void OnDestroy()
+    {
+        // Clear dropdown reference if this is the object being destroyed
+        if (dropdownMenu != null && activeDropdown == dropdownMenu)
+        {
+            activeDropdown = null;
+        }
     }
     
     // Reset to BGSNL when quitting the application to ensure it starts with BGSNL next time
