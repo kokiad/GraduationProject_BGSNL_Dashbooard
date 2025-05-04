@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
+using System.Linq;
 
 /// <summary>
 /// Implements pull-to-refresh functionality for mobile devices
@@ -76,25 +78,31 @@ public class PullToRefresh : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     
     private void FindReferences()
     {
-        // Find UIManager reference
-        uiManager = FindObjectOfType<UIManager>();
         if (uiManager == null)
         {
-            LogWarning("UIManager not found! Pull-to-refresh will not work properly.");
+            uiManager = FindObjectOfType<UIManager>();
+            if (uiManager == null)
+            {
+                LogWarning("UIManager not found!");
+            }
         }
         
-        // Find GoogleSheetsService for data refresh
-        sheetsService = FindObjectOfType<GoogleSheetsService>();
         if (sheetsService == null)
         {
-            LogWarning("GoogleSheetsService not found! Will not be able to fetch fresh data.");
+            sheetsService = FindObjectOfType<GoogleSheetsService>();
+            if (sheetsService == null)
+            {
+                LogWarning("GoogleSheetsService not found!");
+            }
         }
         
-        // Find DataModelClasses for direct data access
-        dataModel = FindObjectOfType<DataModelClasses>();
         if (dataModel == null)
         {
-            LogWarning("DataModelClasses not found! Will not be able to verify data updates.");
+            dataModel = FindObjectOfType<DataModelClasses>();
+            if (dataModel == null)
+            {
+                LogWarning("DataModelClasses not found!");
+            }
         }
     }
     
@@ -173,6 +181,29 @@ public class PullToRefresh : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         else
         {
             LogDebug("  No event metrics available!");
+        }
+    }
+    
+    private void Start()
+    {
+        // Find references if needed
+        FindReferences();
+    }
+    
+    private void OnEnable()
+    {
+        // Find references if needed
+        FindReferences();
+        
+        // Clear any stale preserved city data when entering a new scene
+        if (SceneManager.GetActiveScene().name != "HomeScreen")
+        {
+            if (PlayerPrefs.HasKey("PullRefresh_PreservedCityId"))
+            {
+                PlayerPrefs.DeleteKey("PullRefresh_PreservedCityId");
+                PlayerPrefs.Save();
+                LogDebug("[Critical] Cleared preserved city ID when entering non-home scene");
+            }
         }
     }
     
@@ -300,68 +331,100 @@ public class PullToRefresh : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     
     private IEnumerator ExecuteCompleteRefresh()
     {
-        LogDebug("Starting refresh process for current city: " + currentRefreshingCityId);
+        LogDebug("Starting refresh process...");
         
-        // First, ensure the UI has the right city loaded from the start
-        if (uiManager != null)
-        {
-            LogDebug("Ensuring correct city is loaded: " + currentRefreshingCityId);
-            uiManager.LoadCity(currentRefreshingCityId);
-            // Short wait to ensure city is loaded
-            yield return new WaitForSeconds(0.2f);
-        }
+        // Get current city ID and store it in our special key
+        string currentCity = PlayerPrefs.GetString("SelectedCityId", "bgsnl");
+        PlayerPrefs.SetString("PullRefresh_PreservedCityId", currentCity);
+        PlayerPrefs.Save();
+        LogDebug($"[Critical] Preserved city ID for refresh: '{currentCity}'");
         
-        // Use ForceRefresh instead of individual fetch methods
-        // Our fix to GoogleSheetsService means it now preserves data when it fails
+        // Force refresh the data
         if (sheetsService != null)
         {
-            LogDebug("Starting data refresh via ForceRefresh (now with data preservation)");
-            sheetsService.ForceRefresh();
+            // Start the refresh
+            LogDebug("[Critical] Starting data refresh");
+            yield return StartCoroutine(sheetsService.RefreshAllData());
             
-            // Add a wait to allow refresh to complete
-            yield return new WaitForSeconds(1.5f);
+            // Wait a moment for data to be processed
+            yield return new WaitForSeconds(0.5f);
             
-            // Log the data state after refresh
-            LogDebug("Data state after ForceRefresh:");
-            LogDataState();
+            // IMPORTANT: Mimic the exact city button behavior
+            LogDebug($"[Critical] Using city button approach for: '{currentCity}'");
+            
+            // Set up PlayerPrefs exactly like the city buttons do
+            PlayerPrefs.SetInt("ForceDefaultCity", 0);
+            PlayerPrefs.SetString("SelectedCityId", currentCity);
+            PlayerPrefs.Save();
+            
+            // Load the city data first
+            if (uiManager != null)
+            {
+                uiManager.LoadCity(currentCity);
+                yield return new WaitForSeconds(0.3f);
+            }
+            
+            // Complete the refresh animation
+            isRefreshing = false;
+            if (refreshIndicator != null)
+            {
+                refreshIndicator.SetActive(false);
+            }
+            
+            // Start the snap back animation
+            StartCoroutine(ElasticSnapBack(true));
+            
+            // CRITICAL: Reload the scene like city buttons do
+            // This ensures a complete refresh with proper city context
+            LogDebug($"[Critical] Reloading scene to ensure proper refresh");
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
         else
         {
-            LogWarning("GoogleSheetsService not found! Unable to fetch fresh data.");
-            yield return new WaitForSeconds(0.5f);
-        }
-        
-        // Short pause to ensure everything is loaded
-        yield return new WaitForSeconds(0.5f);
-        
-        // Now refresh the UI to show the newly fetched data
-        if (uiManager != null)
-        {
-            // Make sure to use current city ID, not default
-            if (!string.IsNullOrEmpty(currentRefreshingCityId))
+            LogError("Cannot refresh - GoogleSheetsService not found!");
+            isRefreshing = false;
+            if (refreshIndicator != null)
             {
-                LogDebug("Re-loading city to ensure data is displayed correctly: " + currentRefreshingCityId);
-                uiManager.LoadCity(currentRefreshingCityId);
-                
-                // Small delay to let the city load
-                yield return new WaitForSeconds(0.2f);
+                refreshIndicator.SetActive(false);
             }
-            
-            // Finally refresh the dashboard
-            LogDebug("Refreshing dashboard with new data");
-            uiManager.RefreshDashboard();
-            
-            // Log the final data state
-            LogDebug("Final data state after UI refresh:");
-            LogDataState();
+            StartCoroutine(ElasticSnapBack(false));
+        }
+    }
+    
+    private bool CheckIfHasData()
+    {
+        if (dataModel == null)
+        {
+            LogDebug("[CheckIfHasData] No DataModelClasses found");
+            return false;
         }
         
-        // Add a small delay to show the completed refresh
-        yield return new WaitForSeconds(0.5f);
+        // Get current city ID from our preserved key
+        string cityId = PlayerPrefs.GetString("PullRefresh_PreservedCityId", "bgsnl");
+        LogDebug($"[CheckIfHasData] Checking data for city: '{cityId}'");
         
-        // Snap back with elastic effect
-        LogDebug("Completing refresh process and returning UI to normal position");
-        StartCoroutine(ElasticSnapBack(true));
+        // Check if we have metrics data for this city
+        bool hasSocialData = false;
+        bool hasEventData = false;
+        
+        if (dataModel.SocialMediaMetrics != null && dataModel.SocialMediaMetrics.Count > 0)
+        {
+            hasSocialData = dataModel.SocialMediaMetrics.Any(m => 
+                m.AssociatedCity != null && 
+                m.AssociatedCity.ID != null && 
+                m.AssociatedCity.ID.ToLower() == cityId.ToLower());
+        }
+        
+        if (dataModel.EventMetrics != null && dataModel.EventMetrics.Count > 0)
+        {
+            hasEventData = dataModel.EventMetrics.Any(m => 
+                m.AssociatedCity != null && 
+                m.AssociatedCity.ID != null && 
+                m.AssociatedCity.ID.ToLower() == cityId.ToLower());
+        }
+        
+        LogDebug($"[CheckIfHasData] Has social data: {hasSocialData}, Has event data: {hasEventData}");
+        return hasSocialData || hasEventData;
     }
     
     private IEnumerator ElasticSnapBack(bool wasRefreshed)
@@ -466,28 +529,37 @@ public class PullToRefresh : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     private IEnumerator DirectDataFetch(string cityId)
     {
-        if (sheetsService != null)
+        LogDebug($"[Critical] Current city to preserve: '{cityId}'");
+        
+        // IMPORTANT: Create our own backup of city ID that persists through refresh
+        if (!string.IsNullOrEmpty(cityId))
         {
-            // Fetch social media data
-            LogDebug("Directly fetching social media data...");
-            yield return StartCoroutine(sheetsService.FetchSocialMediaData());
-            
-            // Fetch event data
-            LogDebug("Directly fetching event data...");
-            yield return StartCoroutine(sheetsService.FetchEventData());
-            
-            // Log the data state after fetches
-            LogDebug("Data state after direct fetches:");
-            LogDataState();
-            
-            // Update the UI if there is a UI manager
-            if (uiManager != null)
-            {
-                LogDebug("Updating UI for city: " + cityId);
-                uiManager.LoadCity(cityId);
-                yield return new WaitForSeconds(0.2f);
-                uiManager.RefreshDashboard();
-            }
+            // Store in a special key that won't be overwritten during refresh
+            PlayerPrefs.SetString("PullRefresh_PreservedCityId", cityId);
+            PlayerPrefs.Save();
+            LogDebug($"[Critical] Backed up city ID to special key: '{cityId}'");
         }
+        
+        // EXACT BGSNL BUTTON APPROACH: Force reload scene with city ID saved in PlayerPrefs
+        LogDebug($"[IMPORTANT DEBUG] Using BGSNL button approach for city: '{cityId}'");
+        
+        // Save the city ID to PlayerPrefs exactly as the BGSNL button does
+        PlayerPrefs.SetInt("ForceDefaultCity", 0); // Tell system not to reset to default
+        PlayerPrefs.SetString("SelectedCityId", cityId);
+        PlayerPrefs.Save();
+        LogDebug($"Saved city ID '{cityId}' to PlayerPrefs");
+        
+        // Wait a moment before reloading scene
+        yield return new WaitForSeconds(0.3f);
+        
+        // Instead of just refreshing, reload the entire scene like the BGSNL button does
+        string currentScene = SceneManager.GetActiveScene().name;
+        LogDebug($"Reloading scene '{currentScene}' with city ID '{cityId}' from PlayerPrefs");
+        
+        // This is the key difference - reload entire scene to force complete refresh
+        SceneManager.LoadScene(currentScene);
+        
+        // This code won't execute since we're reloading the scene, but included for completeness
+        LogDebug("Scene reload initiated");
     }
 } 

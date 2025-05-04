@@ -133,7 +133,7 @@ public class UIButtonHandler : MonoBehaviour
                 {
                     CloseActiveDropdown();
                     LogDebug("[UIButtonHandler] Touched outside dropdown, closing it");
-                }
+        }
             }
         }
         
@@ -306,6 +306,8 @@ public class UIButtonHandler : MonoBehaviour
             }
         }
         
+        Debug.Log($"[IMPORTANT DEBUG] SelectCityAndGoHome execution path for cityId: '{cityId}'");
+        
         // Tell the system not to force default city
         PlayerPrefs.SetInt("ForceDefaultCity", 0);
         PlayerPrefs.SetString("SelectedCityId", cityId);
@@ -317,13 +319,17 @@ public class UIButtonHandler : MonoBehaviour
         UIManager manager = FindObjectOfType<UIManager>();
         if (manager != null)
         {
+            Debug.Log($"[IMPORTANT DEBUG] Before calling LoadCity with '{cityId}'");
             LogDebug($"[UIButtonHandler] Found UIManager, calling LoadCity with '{cityId}'");
             manager.LoadCity(cityId);
+            Debug.Log($"[IMPORTANT DEBUG] After calling LoadCity with '{cityId}'");
         }
         
         // Go to main scene
+        Debug.Log($"[IMPORTANT DEBUG] Before loading HomeScreen");
         LogDebug("[UIButtonHandler] Loading HomeScreen scene");
         SceneManager.LoadScene("HomeScreen");
+        Debug.Log($"[IMPORTANT DEBUG] After loading HomeScreen (this may not be seen)");
     }
     
     private void OnDestroy()

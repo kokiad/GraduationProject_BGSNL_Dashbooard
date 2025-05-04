@@ -26,6 +26,16 @@ public class GoogleSheetsService : MonoBehaviour
     private const string API_URL_FORMAT = "https://sheets.googleapis.com/v4/spreadsheets/{0}/values/{1}?key={2}";
     private Dictionary<string, DateTime> lastFetchTimes = new Dictionary<string, DateTime>();
     
+    // Add a property to access the currently selected city
+    public string selectedCity
+    {
+        get
+        {
+            // Always read from PlayerPrefs to ensure we have the latest value
+            return PlayerPrefs.GetString("SelectedCityId", "bgsnl");
+        }
+    }
+    
     private void Awake()
     {
         Debug.Log(@"GoogleSheetsService: Initializing
@@ -146,6 +156,16 @@ IMPORTANT SETUP INFORMATION:
     {
         bool networkSuccess = true;
         
+        // Check for preserved city ID first
+        string originalCityId = PlayerPrefs.GetString("SelectedCityId", "bgsnl");
+        if (PlayerPrefs.HasKey("PullRefresh_PreservedCityId"))
+        {
+            string preservedCity = PlayerPrefs.GetString("PullRefresh_PreservedCityId");
+            Debug.Log($"[GoogleSheetsService] Found preserved city ID: '{preservedCity}', using this instead of '{originalCityId}'");
+            originalCityId = preservedCity;
+        }
+        Debug.Log($"[GoogleSheetsService] Preserving city selection: '{originalCityId}'");
+        
         // Backup existing data before refresh
         List<SocialMediaMetrics> socialMediaBackup = null;
         List<EventMetrics> eventMetricsBackup = null;
@@ -220,13 +240,13 @@ IMPORTANT SETUP INFORMATION:
             {
                 // No backups available, try cache as a last resort
                 Debug.Log("No backup available, falling back to cache...");
-                
-                // Clear data again before loading from cache
-                dataModel.ClearSocialMediaMetrics();
-                dataModel.ClearEventMetrics();
-                
-                // Try to load cached data as fallback
-                LoadCachedData();
+            
+            // Clear data again before loading from cache
+            dataModel.ClearSocialMediaMetrics();
+            dataModel.ClearEventMetrics();
+            
+            // Try to load cached data as fallback
+            LoadCachedData();
             }
         }
         
@@ -241,8 +261,8 @@ IMPORTANT SETUP INFORMATION:
                 Debug.Log("Successfully restored data from backup");
             }
             else
-            {
-                Debug.Log("Successfully loaded data from cache");
+        {
+            Debug.Log("Successfully loaded data from cache");
             }
         }
         else
@@ -1100,74 +1120,109 @@ IMPORTANT SETUP INFORMATION:
     {
         Debug.Log("Starting to refresh all Google Sheets data...");
         
-        // Backup existing data before refresh
-        List<SocialMediaMetrics> socialMediaBackup = null;
-        List<EventMetrics> eventMetricsBackup = null;
+        // Get the current city ID that we need to maintain
+        string cityToMaintain = PlayerPrefs.GetString("SelectedCityId", "bgsnl");
+        
+        // Check for preserved city from pull-to-refresh
+        if (PlayerPrefs.HasKey("PullRefresh_PreservedCityId"))
+        {
+            string preservedCity = PlayerPrefs.GetString("PullRefresh_PreservedCityId");
+            Debug.Log($"[CRITICAL] Found preserved city ID from pull-to-refresh: '{preservedCity}'");
+            cityToMaintain = preservedCity;
+        }
+        Debug.Log($"[CRITICAL] Refreshing data while maintaining city: '{cityToMaintain}'");
+        
+        // Store ALL existing data as backup
+        List<SocialMediaMetrics> allSocialMediaBackup = null;
+        List<EventMetrics> allEventMetricsBackup = null;
         
         if (dataModel != null)
         {
-            // Create backups of existing data
+            // Backup ALL metrics
             if (dataModel.SocialMediaMetrics != null && dataModel.SocialMediaMetrics.Count > 0)
             {
-                socialMediaBackup = new List<SocialMediaMetrics>(dataModel.SocialMediaMetrics);
-                Debug.Log($"Backed up {socialMediaBackup.Count} social media metrics");
+                allSocialMediaBackup = new List<SocialMediaMetrics>(dataModel.SocialMediaMetrics);
+                Debug.Log($"Backed up all {allSocialMediaBackup.Count} social media metrics");
             }
             
             if (dataModel.EventMetrics != null && dataModel.EventMetrics.Count > 0)
             {
-                eventMetricsBackup = new List<EventMetrics>(dataModel.EventMetrics);
-                Debug.Log($"Backed up {eventMetricsBackup.Count} event metrics");
+                allEventMetricsBackup = new List<EventMetrics>(dataModel.EventMetrics);
+                Debug.Log($"Backed up all {allEventMetricsBackup.Count} event metrics");
             }
-            
-            // Clear existing data before refresh
+        }
+        
+        // Clear existing data
+        if (dataModel != null)
+        {
             dataModel.ClearSocialMediaMetrics();
             dataModel.ClearEventMetrics();
         }
         
-        // Attempt to fetch new data
+        // Fetch new data
         yield return FetchSocialMediaData();
         yield return FetchEventData();
         
-        // Check if the fetch was successful
-        bool fetchSuccessful = dataModel.SocialMediaMetrics.Count > 0 && dataModel.EventMetrics.Count > 0;
+        // Verify we got data for our city
+        bool hasNewCityData = false;
+        if (dataModel != null)
+        {
+            hasNewCityData = (dataModel.SocialMediaMetrics != null && 
+                             dataModel.SocialMediaMetrics.Any(m => m.AssociatedCity != null && 
+                                                                 m.AssociatedCity.ID.ToLower() == cityToMaintain.ToLower())) ||
+                            (dataModel.EventMetrics != null && 
+                             dataModel.EventMetrics.Any(m => m.AssociatedCity != null && 
+                                                           m.AssociatedCity.ID.ToLower() == cityToMaintain.ToLower()));
+            
+            // If we didn't get new data for our city, restore from backup
+            if (!hasNewCityData)
+            {
+                Debug.LogWarning($"[CRITICAL] No new data found for city '{cityToMaintain}', restoring from backup");
+                
+                // Restore only the data for our specific city
+                if (allSocialMediaBackup != null)
+                {
+                    var cityMetrics = allSocialMediaBackup.Where(m => 
+                        m.AssociatedCity != null && 
+                        m.AssociatedCity.ID.ToLower() == cityToMaintain.ToLower()).ToList();
+                        
+                    if (cityMetrics.Any())
+                    {
+                        foreach (var metric in cityMetrics)
+                        {
+                            dataModel.AddSocialMediaMetrics(metric);
+                        }
+                        Debug.Log($"Restored {cityMetrics.Count} social media metrics for city '{cityToMaintain}'");
+                    }
+                }
+                
+                if (allEventMetricsBackup != null)
+                {
+                    var cityMetrics = allEventMetricsBackup.Where(m => 
+                        m.AssociatedCity != null && 
+                        m.AssociatedCity.ID.ToLower() == cityToMaintain.ToLower()).ToList();
+                        
+                    if (cityMetrics.Any())
+                    {
+                        foreach (var metric in cityMetrics)
+                        {
+                            dataModel.AddEventMetrics(metric);
+                        }
+                        Debug.Log($"Restored {cityMetrics.Count} event metrics for city '{cityToMaintain}'");
+                    }
+                }
+            }
+            else
+            {
+                Debug.Log($"[CRITICAL] Successfully fetched new data for city '{cityToMaintain}'");
+            }
+        }
         
-        if (!fetchSuccessful && (socialMediaBackup != null || eventMetricsBackup != null))
-        {
-            Debug.Log("Data fetch failed or returned empty results. Restoring from backup...");
-            
-            // Clear any partial data
-            dataModel.ClearSocialMediaMetrics();
-            dataModel.ClearEventMetrics();
-            
-            // Restore from backups
-            if (socialMediaBackup != null && socialMediaBackup.Count > 0)
-            {
-                foreach (var metric in socialMediaBackup)
-                {
-                    dataModel.AddSocialMediaMetrics(metric);
-                }
-                Debug.Log($"Restored {socialMediaBackup.Count} social media metrics from backup");
-            }
-            
-            if (eventMetricsBackup != null && eventMetricsBackup.Count > 0)
-            {
-                foreach (var metric in eventMetricsBackup)
-                {
-                    dataModel.AddEventMetrics(metric);
-                }
-                Debug.Log($"Restored {eventMetricsBackup.Count} event metrics from backup");
-            }
-            
-            Debug.Log("Data restored from backup");
-        }
-        else if (fetchSuccessful)
-        {
-            Debug.Log("All data refreshed successfully from Google Sheets");
-        }
-        else
-        {
-            Debug.LogWarning("Failed to fetch data and no backup was available");
-        }
+        // Ensure the city ID is properly maintained
+        PlayerPrefs.SetString("SelectedCityId", cityToMaintain);
+        PlayerPrefs.SetInt("ForceDefaultCity", 0);
+        PlayerPrefs.Save();
+        Debug.Log($"[CRITICAL] Completed refresh while maintaining city: '{cityToMaintain}'");
     }
 }
 
