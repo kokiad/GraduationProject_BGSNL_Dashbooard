@@ -551,6 +551,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1103507630}
     m_Modifications:
+    - target: {fileID: 1114606515813966537, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1383733353815348546, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2165232797889107764, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2896644865538322370, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 3342246091588070335, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -631,9 +647,37 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4202809214082182724, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5022833466448890515, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5298509257065454000, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5615251944807349677, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5865907872590097889, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
       propertyPath: m_Name
       value: CitiesPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 6930981996944958619, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7017774958564230761, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8484281531201921939, guid: 67ddb36b4e295fd4e9ce848350730dd5, type: 3}
+      propertyPath: buttonType
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

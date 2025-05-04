@@ -546,16 +546,47 @@ public class UIManager : MonoBehaviour
     {
         LogDebug("[UIManager] Manually refreshing dashboard...");
         
+        // Store current city ID to ensure it's maintained after refresh
+        string cityToRefresh = currentCityId;
+        if (string.IsNullOrEmpty(cityToRefresh))
+        {
+            cityToRefresh = PlayerPrefs.GetString("SelectedCityId", "bgsnl");
+            LogDebug($"[UIManager] Using city from PlayerPrefs: '{cityToRefresh}'");
+        }
+        
         // Force a refresh of data
         if (sheetsService != null)
         {
             sheetsService.ForceRefresh();
-            StartCoroutine(WaitAndUpdateDashboard());
+            
+            // Use a more direct method to update the dashboard with the specific city
+            StartCoroutine(RefreshWithSpecificCity(cityToRefresh));
         }
         else
         {
             LogError("[UIManager] Cannot refresh - GoogleSheetsService is null!");
         }
+    }
+    
+    /// <summary>
+    /// Refreshes the dashboard with a specific city ID
+    /// </summary>
+    private IEnumerator RefreshWithSpecificCity(string cityId)
+    {
+        // Wait for data refresh to complete
+        yield return new WaitForSeconds(1.0f);
+        
+        LogDebug($"[UIManager] Refreshing dashboard for specific city: '{cityId}'");
+        
+        // Make sure this is the current city
+        currentCityId = cityId;
+        
+        // Ensure it's saved to PlayerPrefs
+        PlayerPrefs.SetString("SelectedCityId", cityId);
+        PlayerPrefs.Save();
+        
+        // Update the dashboard with this specific city
+        UpdateDashboard();
     }
     
     /// <summary>

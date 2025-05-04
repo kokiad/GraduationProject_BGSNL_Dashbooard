@@ -4174,7 +4174,7 @@ GameObject:
   - component: {fileID: 1266185406573601171}
   - component: {fileID: 5498963519438240524}
   - component: {fileID: 3081913250484473335}
-  - component: {fileID: 495030819074163428}
+  - component: {fileID: 3919932497312393056}
   m_Layer: 0
   m_Name: BGSNL
   m_TagString: Untagged
@@ -4284,7 +4284,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &495030819074163428
+--- !u!114 &3919932497312393056
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4296,8 +4296,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e16eab53ec7bf404aab00bda30512c62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buttonType: 1
-  cityId: 
+  buttonType: 3
+  cityId: bgsnl
   dropdownMenu: {fileID: 5861712986125916289}
   debugMode: 1
 --- !u!1 &7224895908635057764

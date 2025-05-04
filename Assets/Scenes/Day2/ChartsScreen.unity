@@ -583,6 +583,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2909121387410512024, guid: f7a69cb7d28e1a144a0845f8d31ce9a1, type: 3}
+      propertyPath: buttonType
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 4461803051002317111, guid: f7a69cb7d28e1a144a0845f8d31ce9a1, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -598,6 +602,10 @@ PrefabInstance:
     - target: {fileID: 4461803051002317111, guid: f7a69cb7d28e1a144a0845f8d31ce9a1, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5979422326050289922, guid: f7a69cb7d28e1a144a0845f8d31ce9a1, type: 3}
+      propertyPath: buttonType
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6993278036868896648, guid: f7a69cb7d28e1a144a0845f8d31ce9a1, type: 3}
       propertyPath: m_Pivot.x
@@ -682,6 +690,14 @@ PrefabInstance:
     - target: {fileID: 7380104680908092196, guid: f7a69cb7d28e1a144a0845f8d31ce9a1, type: 3}
       propertyPath: m_Name
       value: ChartsPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 8129871082386241924, guid: f7a69cb7d28e1a144a0845f8d31ce9a1, type: 3}
+      propertyPath: buttonType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8613325442307891159, guid: f7a69cb7d28e1a144a0845f8d31ce9a1, type: 3}
+      propertyPath: buttonType
+      value: 4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

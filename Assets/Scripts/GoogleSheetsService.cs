@@ -146,9 +146,26 @@ IMPORTANT SETUP INFORMATION:
     {
         bool networkSuccess = true;
         
-        // Clear existing data before refresh
+        // Backup existing data before refresh
+        List<SocialMediaMetrics> socialMediaBackup = null;
+        List<EventMetrics> eventMetricsBackup = null;
+        
         if (dataModel != null)
         {
+            // Create backups of existing data
+            if (dataModel.SocialMediaMetrics != null && dataModel.SocialMediaMetrics.Count > 0)
+            {
+                socialMediaBackup = new List<SocialMediaMetrics>(dataModel.SocialMediaMetrics);
+                Debug.Log($"Backed up {socialMediaBackup.Count} social media metrics");
+            }
+            
+            if (dataModel.EventMetrics != null && dataModel.EventMetrics.Count > 0)
+            {
+                eventMetricsBackup = new List<EventMetrics>(dataModel.EventMetrics);
+                Debug.Log($"Backed up {eventMetricsBackup.Count} event metrics");
+            }
+            
+            // Clear existing data before refresh - but we have backups now
             dataModel.ClearSocialMediaMetrics();
             dataModel.ClearEventMetrics();
         }
@@ -167,15 +184,50 @@ IMPORTANT SETUP INFORMATION:
         // Check if we have metrics data
         if (dataModel.SocialMediaMetrics.Count == 0 || dataModel.EventMetrics.Count == 0)
         {
-            Debug.Log("Network fetch failed to get all data, falling back to cache...");
+            Debug.Log("Network fetch failed to get all data. Restoring backup or falling back to cache...");
             networkSuccess = false;
             
-            // Clear data again before loading from cache
-            dataModel.ClearSocialMediaMetrics();
-            dataModel.ClearEventMetrics();
-            
-            // Try to load cached data as fallback
-            LoadCachedData();
+            // First try to restore from our backups
+            if ((socialMediaBackup != null && socialMediaBackup.Count > 0) ||
+                (eventMetricsBackup != null && eventMetricsBackup.Count > 0))
+            {
+                Debug.Log("Restoring data from backup...");
+                
+                // Clear any partial data that might have come through
+                dataModel.ClearSocialMediaMetrics();
+                dataModel.ClearEventMetrics();
+                
+                // Restore from backups
+                if (socialMediaBackup != null && socialMediaBackup.Count > 0)
+                {
+                    foreach (var metric in socialMediaBackup)
+                    {
+                        dataModel.AddSocialMediaMetrics(metric);
+                    }
+                    Debug.Log($"Restored {socialMediaBackup.Count} social media metrics from backup");
+                }
+                
+                if (eventMetricsBackup != null && eventMetricsBackup.Count > 0)
+                {
+                    foreach (var metric in eventMetricsBackup)
+                    {
+                        dataModel.AddEventMetrics(metric);
+                    }
+                    Debug.Log($"Restored {eventMetricsBackup.Count} event metrics from backup");
+                }
+            }
+            else
+            {
+                // No backups available, try cache as a last resort
+                Debug.Log("No backup available, falling back to cache...");
+                
+                // Clear data again before loading from cache
+                dataModel.ClearSocialMediaMetrics();
+                dataModel.ClearEventMetrics();
+                
+                // Try to load cached data as fallback
+                LoadCachedData();
+            }
         }
         
         if (networkSuccess)
@@ -184,11 +236,18 @@ IMPORTANT SETUP INFORMATION:
         }
         else if (dataModel.SocialMediaMetrics.Count > 0 && dataModel.EventMetrics.Count > 0)
         {
-            Debug.Log("Successfully loaded data from cache");
+            if (socialMediaBackup != null || eventMetricsBackup != null)
+            {
+                Debug.Log("Successfully restored data from backup");
+            }
+            else
+            {
+                Debug.Log("Successfully loaded data from cache");
+            }
         }
         else
         {
-            Debug.LogWarning("Failed to load data from both network and cache");
+            Debug.LogWarning("Failed to load data from network, backup, and cache");
         }
     }
     
@@ -1041,16 +1100,74 @@ IMPORTANT SETUP INFORMATION:
     {
         Debug.Log("Starting to refresh all Google Sheets data...");
         
-        // Clear existing data before refresh
+        // Backup existing data before refresh
+        List<SocialMediaMetrics> socialMediaBackup = null;
+        List<EventMetrics> eventMetricsBackup = null;
+        
         if (dataModel != null)
         {
+            // Create backups of existing data
+            if (dataModel.SocialMediaMetrics != null && dataModel.SocialMediaMetrics.Count > 0)
+            {
+                socialMediaBackup = new List<SocialMediaMetrics>(dataModel.SocialMediaMetrics);
+                Debug.Log($"Backed up {socialMediaBackup.Count} social media metrics");
+            }
+            
+            if (dataModel.EventMetrics != null && dataModel.EventMetrics.Count > 0)
+            {
+                eventMetricsBackup = new List<EventMetrics>(dataModel.EventMetrics);
+                Debug.Log($"Backed up {eventMetricsBackup.Count} event metrics");
+            }
+            
+            // Clear existing data before refresh
             dataModel.ClearSocialMediaMetrics();
             dataModel.ClearEventMetrics();
         }
         
+        // Attempt to fetch new data
         yield return FetchSocialMediaData();
         yield return FetchEventData();
-        Debug.Log("All data refreshed from Google Sheets");
+        
+        // Check if the fetch was successful
+        bool fetchSuccessful = dataModel.SocialMediaMetrics.Count > 0 && dataModel.EventMetrics.Count > 0;
+        
+        if (!fetchSuccessful && (socialMediaBackup != null || eventMetricsBackup != null))
+        {
+            Debug.Log("Data fetch failed or returned empty results. Restoring from backup...");
+            
+            // Clear any partial data
+            dataModel.ClearSocialMediaMetrics();
+            dataModel.ClearEventMetrics();
+            
+            // Restore from backups
+            if (socialMediaBackup != null && socialMediaBackup.Count > 0)
+            {
+                foreach (var metric in socialMediaBackup)
+                {
+                    dataModel.AddSocialMediaMetrics(metric);
+                }
+                Debug.Log($"Restored {socialMediaBackup.Count} social media metrics from backup");
+            }
+            
+            if (eventMetricsBackup != null && eventMetricsBackup.Count > 0)
+            {
+                foreach (var metric in eventMetricsBackup)
+                {
+                    dataModel.AddEventMetrics(metric);
+                }
+                Debug.Log($"Restored {eventMetricsBackup.Count} event metrics from backup");
+            }
+            
+            Debug.Log("Data restored from backup");
+        }
+        else if (fetchSuccessful)
+        {
+            Debug.Log("All data refreshed successfully from Google Sheets");
+        }
+        else
+        {
+            Debug.LogWarning("Failed to fetch data and no backup was available");
+        }
     }
 }
 

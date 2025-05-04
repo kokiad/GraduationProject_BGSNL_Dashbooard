@@ -14,7 +14,6 @@ public class UIButtonHandler : MonoBehaviour
     public enum ButtonType
     {
         DropdownToggle,
-        BGSNLHome,
         CitiesScene,
         CityButton,
         ChartsScene,
@@ -33,6 +32,8 @@ public class UIButtonHandler : MonoBehaviour
     
     // Static reference to track active dropdown for touch outside detection
     private static GameObject activeDropdown;
+    // Flag to prevent immediate reopening when toggling the dropdown
+    private bool isTogglingDropdown = false;
     
     private void Awake()
     {
@@ -94,10 +95,6 @@ public class UIButtonHandler : MonoBehaviour
                 button.onClick.AddListener(ToggleDropdownMenu);
                 break;
                 
-            case ButtonType.BGSNLHome:
-                button.onClick.AddListener(GoToBGSNLHome);
-                break;
-                
             case ButtonType.CitiesScene:
                 button.onClick.AddListener(GoToCitiesScene);
                 break;
@@ -125,7 +122,7 @@ public class UIButtonHandler : MonoBehaviour
     private void Update()
     {
         // Check for touches outside dropdown menu
-        if (activeDropdown != null && Input.touchCount > 0)
+        if (activeDropdown != null && Input.touchCount > 0 && !isTogglingDropdown)
         {
             Touch touch = Input.GetTouch(0);
             
@@ -142,7 +139,7 @@ public class UIButtonHandler : MonoBehaviour
         
         // Fallback for testing in editor with mouse clicks
         #if UNITY_EDITOR
-        if (activeDropdown != null && Input.GetMouseButtonDown(0))
+        if (activeDropdown != null && Input.GetMouseButtonDown(0) && !isTogglingDropdown)
         {
             if (!IsPointerOverUIElement(Input.mousePosition) || !IsPointerOverDropdown(Input.mousePosition))
             {
@@ -200,81 +197,57 @@ public class UIButtonHandler : MonoBehaviour
     
     private void ToggleDropdownMenu()
     {
-        if (dropdownMenu != null)
-        {
-            bool isActive = dropdownMenu.activeSelf;
-            
-            // If we're opening this dropdown, close any other active one
-            if (!isActive && activeDropdown != null && activeDropdown != dropdownMenu)
-            {
-                activeDropdown.SetActive(false);
-            }
-            
-            // Toggle this dropdown
-            dropdownMenu.SetActive(!isActive);
-            
-            // Update the static reference
-            if (!isActive)
-            {
-                activeDropdown = dropdownMenu;
-            }
-            else
-            {
-                activeDropdown = null;
-            }
-            
-            LogDebug($"[UIButtonHandler] Toggled dropdown menu: {!isActive}");
-        }
-        else
+        if (dropdownMenu == null)
         {
             Debug.LogError("[UIButtonHandler] Cannot toggle dropdown menu - reference is null!");
+            return;
         }
-    }
-    
-    private void GoToBGSNLHome()
-    {
-        LogDebug("[UIButtonHandler] BGSNL Home button clicked");
         
-        // Override forceDefaultCity in PlayerPrefs to make sure it uses BGSNL
-        PlayerPrefs.SetInt("ForceDefaultCity", 1);
-        PlayerPrefs.SetString("SelectedCityId", "bgsnl");
-        PlayerPrefs.Save();
-        LogDebug("[UIButtonHandler] Set SelectedCityId to 'bgsnl' in PlayerPrefs");
+        // If we're already toggling, ignore this click completely
+        if (isTogglingDropdown)
+        {
+            LogDebug("[UIButtonHandler] Ignoring toggle request - already toggling");
+            return;
+        }
         
-        // Close dropdown if it exists in the scene
-        if (dropdownMenu != null)
+        // Set flag to prevent double-toggling
+        isTogglingDropdown = true;
+        
+        // Get current state
+        bool isCurrentlyActive = dropdownMenu.activeSelf;
+        
+        // If currently open, close it
+        if (isCurrentlyActive)
         {
             dropdownMenu.SetActive(false);
             activeDropdown = null;
+            LogDebug("[UIButtonHandler] Closed dropdown menu");
         }
-        
-        // Try to find UIManager in current scene
-        UIManager manager = FindObjectOfType<UIManager>();
-        if (manager != null)
-        {
-            LogDebug("[UIButtonHandler] Found UIManager, calling LoadCity with 'bgsnl'");
-            manager.LoadCity("bgsnl");
-        }
-        
-        // Load main scene if not already there
-        if (SceneManager.GetActiveScene().name != "HomeScreen")
-        {
-            LogDebug("[UIButtonHandler] Loading HomeScreen scene");
-            SceneManager.LoadScene("HomeScreen");
-        }
+        // If currently closed, open it
         else
         {
-            // If we're already in the main scene and couldn't find a UIManager, try once more
-            if (manager == null)
+            // Close any other active dropdown first
+            if (activeDropdown != null && activeDropdown != dropdownMenu)
             {
-                LogDebug("[UIButtonHandler] Already in HomeScreen but no UIManager found, trying again");
-                manager = FindObjectOfType<UIManager>();
-                if (manager != null)
-                {
-                    manager.LoadCity("bgsnl");
-                }
+                activeDropdown.SetActive(false);
+                LogDebug("[UIButtonHandler] Closed another active dropdown first");
             }
+            
+            dropdownMenu.SetActive(true);
+            activeDropdown = dropdownMenu;
+            LogDebug("[UIButtonHandler] Opened dropdown menu");
         }
+        
+        // Use a delayed coroutine to reset the flag
+        StartCoroutine(ResetToggleFlag());
+    }
+    
+    private IEnumerator ResetToggleFlag()
+    {
+        // Wait for a longer time to prevent any possibility of double-clicks
+        yield return new WaitForSeconds(0.7f);
+        isTogglingDropdown = false;
+        LogDebug("[UIButtonHandler] Reset toggle flag - ready for next toggle");
     }
     
     private void GoToCitiesScene()
