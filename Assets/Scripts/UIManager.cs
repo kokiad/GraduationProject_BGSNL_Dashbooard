@@ -382,7 +382,7 @@ public class UIManager : MonoBehaviour
             
             if (instagramFollowersText != null)
             {
-                instagramFollowersText.text = socialMetrics.InstagramFollowers.ToString("N0");
+                instagramFollowersText.text = socialMetrics.InstagramFollowers;
                 LogDebug($"[UIManager] Set Instagram followers text to: {instagramFollowersText.text}");
             }
             else
@@ -392,7 +392,7 @@ public class UIManager : MonoBehaviour
             
             if (tiktokFollowersText != null)
             {
-                tiktokFollowersText.text = socialMetrics.TikTokFollowers.ToString("N0");
+                tiktokFollowersText.text = socialMetrics.TikTokFollowers;
                 LogDebug($"[UIManager] Set TikTok followers text to: {tiktokFollowersText.text}");
             }
             else
@@ -402,7 +402,7 @@ public class UIManager : MonoBehaviour
             
             if (tiktokLikesText != null)
             {
-                tiktokLikesText.text = socialMetrics.TikTokLikes.ToString("N0");
+                tiktokLikesText.text = socialMetrics.TikTokLikes;
                 LogDebug($"[UIManager] Set TikTok likes text to: {tiktokLikesText.text}");
             }
             else
@@ -419,8 +419,8 @@ public class UIManager : MonoBehaviour
             if (tiktokFollowersText != null) tiktokFollowersText.text = "0";
             if (tiktokLikesText != null) tiktokLikesText.text = "0";
         }
-        }
-        
+    }
+    
     private void UpdateEventMetrics(EventMetrics eventMetrics, City selectedCity)
     {
         if (eventMetrics != null)
@@ -429,7 +429,7 @@ public class UIManager : MonoBehaviour
             
             if (ticketsSoldText != null)
             {
-                ticketsSoldText.text = eventMetrics.TicketsSold.ToString("N0");
+                ticketsSoldText.text = eventMetrics.TicketsSold;
                 LogDebug($"[UIManager] Set tickets sold text to: {ticketsSoldText.text}");
             }
             else
@@ -439,7 +439,7 @@ public class UIManager : MonoBehaviour
             
             if (averageAttendanceText != null)
             {
-                averageAttendanceText.text = eventMetrics.AverageAttendance.ToString("N1");
+                averageAttendanceText.text = eventMetrics.AverageAttendance;
                 LogDebug($"[UIManager] Set average attendance text to: {averageAttendanceText.text}");
             }
             else
@@ -449,7 +449,7 @@ public class UIManager : MonoBehaviour
             
             if (numberOfEventsText != null)
             {
-                numberOfEventsText.text = eventMetrics.NumberOfEvents.ToString();
+                numberOfEventsText.text = eventMetrics.NumberOfEvents;
                 LogDebug($"[UIManager] Set number of events text to: {numberOfEventsText.text}");
             }
             else
@@ -747,8 +747,8 @@ public class UIManager : MonoBehaviour
                         // Default to BGSNL if no city is saved
                         ResetToDefaultCity();
                         Debug.Log("[UIManager] No valid city found in PlayerPrefs or backup, defaulting to BGSNL");
-                    }
                 }
+            }
             else
             {
                 // Default to BGSNL if no city is saved

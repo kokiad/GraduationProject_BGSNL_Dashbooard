@@ -538,6 +538,17 @@ IMPORTANT SETUP INFORMATION:
         List<string> headers = values[0];
         Dictionary<string, int> columnMap = CreateColumnMap(headers);
         
+        // Verify we have the required columns
+        string[] requiredColumns = { "city_id", "instagram_followers", "tiktok_followers", "tiktok_likes" };
+        foreach (var column in requiredColumns)
+        {
+            if (!columnMap.ContainsKey(column))
+            {
+                Debug.LogError($"Required column '{column}' not found in sheet headers!");
+                return;
+            }
+        }
+        
         Debug.Log($"SocialMedia sheet headers: {string.Join(", ", headers)}");
         
         // Clear existing social media data to prevent duplicates
@@ -553,59 +564,43 @@ IMPORTANT SETUP INFORMATION:
         for (int i = 1; i < values.Count; i++)
         {
             List<string> row = values[i];
-            if (row.Count < headers.Count) 
-            {
-                Debug.LogWarning($"SocialMedia row {i} has fewer columns ({row.Count}) than headers ({headers.Count})");
-                continue;
-            }
             
             try
             {
-                Dictionary<string, string> rawData = new Dictionary<string, string>();
-                
-                // Map column values based on headers
-                foreach (var column in columnMap)
+                // Get city_id first - it's required
+                int cityIdIndex = columnMap["city_id"];
+                if (cityIdIndex >= row.Count)
                 {
-                    if (column.Value < row.Count)
-                    {
-                        rawData[column.Key.ToLower()] = row[column.Value];
-                    }
+                    Debug.LogWarning($"Row {i} doesn't have enough columns to contain city_id");
+                    continue;
                 }
                 
-                // Log raw data for debugging
-                Debug.Log($"Processing SocialMedia row {i}: {string.Join(", ", rawData.Select(kv => $"{kv.Key}={kv.Value}"))}");
-                
-                // Extract city ID - handling special case for first data row
-                string cityId;
-                if (i == 1) 
+                string cityId = row[cityIdIndex].ToLower().Trim();
+                if (string.IsNullOrEmpty(cityId))
                 {
-                    // First data row is for BGSNL (national combined metrics)
-                    // If city_id is missing or empty, set a default value of "bgsnl"
-                    if (!rawData.TryGetValue("city_id", out cityId) || string.IsNullOrEmpty(cityId))
+                    if (i == 1)
                     {
                         cityId = "bgsnl";
                         Debug.Log("First row in SocialMedia sheet has been assigned ID 'bgsnl'");
                     }
-                }
-                else 
-                {
-                    // For other rows, require a city ID
-                    if (!rawData.TryGetValue("city_id", out cityId) || string.IsNullOrEmpty(cityId))
+                    else
                     {
                         Debug.LogWarning($"Missing city ID in row {i}");
                         continue;
                     }
                 }
                 
-                // Normalize city ID (lowercase)
-                cityId = cityId.ToLower().Trim();
-                Debug.Log($"SocialMedia row {i} city ID: '{cityId}'");
+                // Special debug logging for Eindhoven and Maastricht
+                if (cityId == "bgse" || cityId == "bgsm")
+                {
+                    Debug.Log($"[CRITICAL DEBUG] Found {cityId} data in row {i}:");
+                    Debug.Log($"[CRITICAL DEBUG] Raw row data: {string.Join(" | ", row)}");
+                }
                 
                 // Find the associated city
                 City city = dataModel.GetCityById(cityId);
                 if (city == null)
                 {
-                    // If it's the BGSNL data row but no city exists for it, create a default one
                     if (cityId.ToLower() == "bgsnl")
                     {
                         city = new City("BGSNL", "bgsnl");
@@ -619,45 +614,74 @@ IMPORTANT SETUP INFORMATION:
                     }
                 }
                 
-                // Create and populate metrics object
-                SocialMediaMetrics metrics = new SocialMediaMetrics(0, 0, 0, city, DateTime.Now);
-                metrics.UpdateFromRawData(rawData);
+                // Extract metrics values safely
+                string instagramFollowers = "0";
+                string tiktokFollowers = "0";
+                string tiktokLikes = "0";
                 
-                // Log the metrics
-                Debug.Log($"Created social media metrics for {city.Name} (ID: {city.ID}) - " +
-                          $"Instagram: {metrics.InstagramFollowers}, TikTok: {metrics.TikTokFollowers}, Likes: {metrics.TikTokLikes}");
+                if (columnMap["instagram_followers"] < row.Count)
+                {
+                    instagramFollowers = row[columnMap["instagram_followers"]];
+                }
+                
+                if (columnMap["tiktok_followers"] < row.Count)
+                {
+                    tiktokFollowers = row[columnMap["tiktok_followers"]];
+                }
+                
+                if (columnMap["tiktok_likes"] < row.Count)
+                {
+                    tiktokLikes = row[columnMap["tiktok_likes"]];
+                }
+                
+                // Create metrics object
+                SocialMediaMetrics metrics = new SocialMediaMetrics(
+                    instagramFollowers,
+                    tiktokFollowers,
+                    tiktokLikes,
+                    city,
+                    DateTime.Now
+                );
+                
+                // Special debug logging for metrics creation
+                if (cityId == "bgse" || cityId == "bgsm")
+                {
+                    Debug.Log($"[CRITICAL DEBUG] Created metrics for {cityId}:");
+                    Debug.Log($"[CRITICAL DEBUG] Instagram: {metrics.InstagramFollowers}");
+                    Debug.Log($"[CRITICAL DEBUG] TikTok: {metrics.TikTokFollowers}");
+                    Debug.Log($"[CRITICAL DEBUG] Likes: {metrics.TikTokLikes}");
+                }
                 
                 // Only add to dataModel if this is the best metrics for this city
-                // (has non-zero values if the existing one has zeroes)
                 bool shouldAdd = true;
                 if (bestMetrics.ContainsKey(cityId))
                 {
                     var existing = bestMetrics[cityId];
                     
                     // If existing metrics has non-zero values and current one has all zeroes, don't replace
-                    if ((existing.InstagramFollowers > 0 || existing.TikTokFollowers > 0 || existing.TikTokLikes > 0) &&
-                        (metrics.InstagramFollowers == 0 && metrics.TikTokFollowers == 0 && metrics.TikTokLikes == 0))
+                    if ((existing.InstagramFollowers != "0" || existing.TikTokFollowers != "0" || existing.TikTokLikes != "0") &&
+                        (metrics.InstagramFollowers == "0" && metrics.TikTokFollowers == "0" && metrics.TikTokLikes == "0"))
                     {
                         shouldAdd = false;
-                        Debug.Log($"Skipping zero-value social media metrics for {city.Name} (ID: {city.ID}) because better metrics exist");
+                        Debug.Log($"[CRITICAL DEBUG] Skipping zero-value metrics for {city.Name} (ID: {city.ID}) because better metrics exist");
                     }
-                    else if (metrics.InstagramFollowers > 0 || metrics.TikTokFollowers > 0 || metrics.TikTokLikes > 0)
+                    else if (metrics.InstagramFollowers != "0" || metrics.TikTokFollowers != "0" || metrics.TikTokLikes != "0")
                     {
-                        // Replace if current metrics has any non-zero values
                         shouldAdd = true;
-                        Debug.Log($"Replacing existing social media metrics for {city.Name} (ID: {city.ID}) with better non-zero metrics");
+                        Debug.Log($"[CRITICAL DEBUG] Replacing existing metrics for {city.Name} (ID: {city.ID}) with better non-zero metrics");
                     }
                 }
                 
                 if (shouldAdd)
                 {
                     bestMetrics[cityId] = metrics;
-                    Debug.Log($"Added/Updated best social media metrics for {city.Name} (ID: {city.ID})");
+                    Debug.Log($"[CRITICAL DEBUG] Added/Updated best metrics for {city.Name} (ID: {city.ID})");
                 }
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Error processing social media row {i}: {ex.Message}");
+                Debug.LogError($"Stack trace: {ex.StackTrace}");
             }
         }
         
@@ -665,7 +689,7 @@ IMPORTANT SETUP INFORMATION:
         foreach (var metric in bestMetrics.Values)
         {
             dataModel.AddSocialMediaMetrics(metric);
-            Debug.Log($"Final social media metrics for {metric.AssociatedCity.Name} (ID: {metric.AssociatedCity.ID}) - " +
+            Debug.Log($"[CRITICAL DEBUG] Final social media metrics for {metric.AssociatedCity.Name} (ID: {metric.AssociatedCity.ID}) - " +
                      $"Instagram: {metric.InstagramFollowers}, TikTok: {metric.TikTokFollowers}, Likes: {metric.TikTokLikes}");
         }
         
@@ -780,7 +804,7 @@ IMPORTANT SETUP INFORMATION:
                           $"average_attendance: {hasAverageAttendance}, number_of_events: {hasNumberOfEvents}");
                 
                 // Create and populate metrics object
-                EventMetrics metrics = new EventMetrics(0, 0, 0, city, DateTime.Now);
+                EventMetrics metrics = new EventMetrics("0", "0", "0", city, DateTime.Now);
                 metrics.UpdateFromRawData(rawData);
                 
                 // Log the metrics
@@ -788,22 +812,20 @@ IMPORTANT SETUP INFORMATION:
                           $"Tickets: {metrics.TicketsSold}, Attendance: {metrics.AverageAttendance}, Events: {metrics.NumberOfEvents}");
                 
                 // Only add to dataModel if this is the best metrics for this city
-                // (has non-zero values if the existing one has zeroes)
                 bool shouldAdd = true;
                 if (bestMetrics.ContainsKey(cityId))
                 {
                     var existing = bestMetrics[cityId];
                     
                     // If existing metrics has non-zero values and current one has all zeroes, don't replace
-                    if ((existing.TicketsSold > 0 || existing.AverageAttendance > 0 || existing.NumberOfEvents > 0) &&
-                        (metrics.TicketsSold == 0 && metrics.AverageAttendance == 0 && metrics.NumberOfEvents == 0))
+                    if ((existing.TicketsSold != "0" || existing.AverageAttendance != "0" || existing.NumberOfEvents != "0") &&
+                        (metrics.TicketsSold == "0" && metrics.AverageAttendance == "0" && metrics.NumberOfEvents == "0"))
                     {
                         shouldAdd = false;
                         Debug.Log($"Skipping zero-value metrics for {city.Name} (ID: {city.ID}) because better metrics exist");
                     }
-                    else if (metrics.TicketsSold > 0 || metrics.AverageAttendance > 0 || metrics.NumberOfEvents > 0)
+                    else if (metrics.TicketsSold != "0" || metrics.AverageAttendance != "0" || metrics.NumberOfEvents != "0")
                     {
-                        // Replace if current metrics has any non-zero values
                         shouldAdd = true;
                         Debug.Log($"Replacing existing metrics for {city.Name} (ID: {city.ID}) with better non-zero metrics");
                     }
@@ -840,11 +862,23 @@ IMPORTANT SETUP INFORMATION:
     private Dictionary<string, int> CreateColumnMap(List<string> headers)
     {
         Dictionary<string, int> map = new Dictionary<string, int>();
+        
+        Debug.Log($"[CRITICAL] Creating column map from headers: {string.Join(", ", headers)}");
+        
         for (int i = 0; i < headers.Count; i++)
         {
             string header = headers[i].Trim().ToLower().Replace(" ", "_");
             map[header] = i;
+            Debug.Log($"[CRITICAL] Mapped header '{headers[i]}' -> '{header}' to index {i}");
         }
+        
+        // Log the final map
+        Debug.Log("[CRITICAL] Final column map:");
+        foreach (var kvp in map)
+        {
+            Debug.Log($"[CRITICAL] {kvp.Key} -> {kvp.Value}");
+        }
+        
         return map;
     }
     

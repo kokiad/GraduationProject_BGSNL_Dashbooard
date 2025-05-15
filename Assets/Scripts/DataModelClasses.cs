@@ -22,19 +22,19 @@ public class City
 [Serializable]
 public class SocialMediaMetrics
 {
-    [SerializeField] private int instagramFollowers;
-    [SerializeField] private int tikTokFollowers;
-    [SerializeField] private int tikTokLikes;
+    [SerializeField] private string instagramFollowers;
+    [SerializeField] private string tikTokFollowers;
+    [SerializeField] private string tikTokLikes;
     [SerializeField] private City associatedCity;
     [SerializeField] private DateTime timestamp;
 
-    public int InstagramFollowers { get => instagramFollowers; set => instagramFollowers = value; }
-    public int TikTokFollowers { get => tikTokFollowers; set => tikTokFollowers = value; }
-    public int TikTokLikes { get => tikTokLikes; set => tikTokLikes = value; }
+    public string InstagramFollowers { get => instagramFollowers; set => instagramFollowers = value; }
+    public string TikTokFollowers { get => tikTokFollowers; set => tikTokFollowers = value; }
+    public string TikTokLikes { get => tikTokLikes; set => tikTokLikes = value; }
     public City AssociatedCity { get => associatedCity; set => associatedCity = value; }
     public DateTime Timestamp { get => timestamp; set => timestamp = value; }
 
-    public SocialMediaMetrics(int instagramFollowers, int tikTokFollowers, int tikTokLikes, City associatedCity, DateTime timestamp)
+    public SocialMediaMetrics(string instagramFollowers, string tikTokFollowers, string tikTokLikes, City associatedCity, DateTime timestamp)
     {
         this.instagramFollowers = instagramFollowers;
         this.tikTokFollowers = tikTokFollowers;
@@ -49,67 +49,39 @@ public class SocialMediaMetrics
         
         if (rawData.TryGetValue("instagram_followers", out string igFollowers))
         {
-            // Try to clean the string before parsing
-            string cleanValue = CleanNumericString(igFollowers);
-            
-            if (int.TryParse(cleanValue, out int igValue))
-            {
-                instagramFollowers = igValue;
-                Debug.Log($"Parsed instagram_followers: {igFollowers} -> {instagramFollowers}");
-            }
-            else
-            {
-                Debug.LogWarning($"Failed to parse instagram_followers value: '{igFollowers}' (cleaned: '{cleanValue}')");
-            }
+            instagramFollowers = igFollowers;
+            Debug.Log($"Set instagram_followers: {igFollowers}");
         }
         else
         {
             Debug.LogWarning("Raw data missing instagram_followers field");
+            instagramFollowers = "0";
         }
         
         if (rawData.TryGetValue("tiktok_followers", out string ttFollowers))
         {
-            // Try to clean the string before parsing
-            string cleanValue = CleanNumericString(ttFollowers);
-            
-            if (int.TryParse(cleanValue, out int ttfValue))
-            {
-                tikTokFollowers = ttfValue;
-                Debug.Log($"Parsed tiktok_followers: {ttFollowers} -> {tikTokFollowers}");
-            }
-            else
-            {
-                Debug.LogWarning($"Failed to parse tiktok_followers value: '{ttFollowers}' (cleaned: '{cleanValue}')");
-            }
+            tikTokFollowers = ttFollowers;
+            Debug.Log($"Set tiktok_followers: {ttFollowers}");
         }
         else
         {
             Debug.LogWarning("Raw data missing tiktok_followers field");
+            tikTokFollowers = "0";
         }
         
         if (rawData.TryGetValue("tiktok_likes", out string ttLikes))
         {
-            // Try to clean the string before parsing
-            string cleanValue = CleanNumericString(ttLikes);
-            
-            if (int.TryParse(cleanValue, out int ttlValue))
-            {
-                tikTokLikes = ttlValue;
-                Debug.Log($"Parsed tiktok_likes: {ttLikes} -> {tikTokLikes}");
-            }
-            else
-            {
-                Debug.LogWarning($"Failed to parse tiktok_likes value: '{ttLikes}' (cleaned: '{cleanValue}')");
-            }
+            tikTokLikes = ttLikes;
+            Debug.Log($"Set tiktok_likes: {ttLikes}");
         }
         else
         {
             Debug.LogWarning("Raw data missing tiktok_likes field");
+            tikTokLikes = "0";
         }
         
         if (rawData.TryGetValue("timestamp", out string timestampStr))
         {
-            // First try as a proper DateTime
             if (DateTime.TryParse(timestampStr, out DateTime parsedTimestamp))
             {
                 timestamp = parsedTimestamp;
@@ -117,64 +89,34 @@ public class SocialMediaMetrics
             }
             else
             {
-                // If not a valid date, just use current date/time
                 timestamp = DateTime.Now;
                 Debug.Log($"Timestamp value '{timestampStr}' is not a valid date. Using current time: {timestamp}");
             }
         }
         else
         {
-            // No timestamp provided, use current time
             timestamp = DateTime.Now;
             Debug.Log("No timestamp field found. Using current time: " + timestamp);
         }
-    }
-    
-    // Helper method to clean numeric strings for parsing
-    private string CleanNumericString(string input)
-    {
-        if (string.IsNullOrEmpty(input))
-            return "0";
-            
-        // Remove any non-digit characters
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        
-        // Handle negative numbers
-        bool isNegative = input.TrimStart().StartsWith("-");
-        
-        foreach (char c in input)
-        {
-            if (char.IsDigit(c))
-            {
-                sb.Append(c);
-            }
-        }
-        
-        // Apply negative sign if needed
-        string result = sb.ToString();
-        if (isNegative && result.Length > 0)
-            result = "-" + result;
-            
-        return result.Length > 0 ? result : "0";
     }
 }
 
 [Serializable]
 public class EventMetrics
 {
-    [SerializeField] private int ticketsSold;
-    [SerializeField] private float averageAttendance;
-    [SerializeField] private int numberOfEvents;
+    [SerializeField] private string ticketsSold;
+    [SerializeField] private string averageAttendance;
+    [SerializeField] private string numberOfEvents;
     [SerializeField] private City associatedCity;
     [SerializeField] private DateTime timestamp;
 
-    public int TicketsSold { get => ticketsSold; set => ticketsSold = value; }
-    public float AverageAttendance { get => averageAttendance; set => averageAttendance = value; }
-    public int NumberOfEvents { get => numberOfEvents; set => numberOfEvents = value; }
+    public string TicketsSold { get => ticketsSold; set => ticketsSold = value; }
+    public string AverageAttendance { get => averageAttendance; set => averageAttendance = value; }
+    public string NumberOfEvents { get => numberOfEvents; set => numberOfEvents = value; }
     public City AssociatedCity { get => associatedCity; set => associatedCity = value; }
     public DateTime Timestamp { get => timestamp; set => timestamp = value; }
 
-    public EventMetrics(int ticketsSold, float averageAttendance, int numberOfEvents, City associatedCity, DateTime timestamp)
+    public EventMetrics(string ticketsSold, string averageAttendance, string numberOfEvents, City associatedCity, DateTime timestamp)
     {
         this.ticketsSold = ticketsSold;
         this.averageAttendance = averageAttendance;
@@ -189,67 +131,39 @@ public class EventMetrics
         
         if (rawData.TryGetValue("tickets_sold", out string tickets))
         {
-            // Try to clean the string before parsing
-            string cleanValue = CleanNumericString(tickets);
-            
-            if (int.TryParse(cleanValue, out int ticketsValue))
-            {
-                ticketsSold = ticketsValue;
-                Debug.Log($"Parsed tickets_sold: {tickets} -> {ticketsSold}");
-            }
-            else
-            {
-                Debug.LogWarning($"Failed to parse tickets_sold value: '{tickets}' (cleaned: '{cleanValue}')");
-            }
+            ticketsSold = tickets;
+            Debug.Log($"Set tickets_sold: {tickets}");
         }
         else
         {
             Debug.LogWarning("Raw data missing tickets_sold field");
+            ticketsSold = "0";
         }
         
         if (rawData.TryGetValue("average_attendance", out string attendance))
         {
-            // Try to clean the string before parsing
-            string cleanValue = CleanFloatString(attendance);
-            
-            if (float.TryParse(cleanValue, out float attendanceValue))
-            {
-                averageAttendance = attendanceValue;
-                Debug.Log($"Parsed average_attendance: {attendance} -> {averageAttendance}");
-            }
-            else
-            {
-                Debug.LogWarning($"Failed to parse average_attendance value: '{attendance}' (cleaned: '{cleanValue}')");
-            }
+            averageAttendance = attendance;
+            Debug.Log($"Set average_attendance: {attendance}");
         }
         else
         {
             Debug.LogWarning("Raw data missing average_attendance field");
+            averageAttendance = "0";
         }
         
         if (rawData.TryGetValue("number_of_events", out string events))
         {
-            // Try to clean the string before parsing
-            string cleanValue = CleanNumericString(events);
-            
-            if (int.TryParse(cleanValue, out int eventsValue))
-            {
-                numberOfEvents = eventsValue;
-                Debug.Log($"Parsed number_of_events: {events} -> {numberOfEvents}");
-            }
-            else
-            {
-                Debug.LogWarning($"Failed to parse number_of_events value: '{events}' (cleaned: '{cleanValue}')");
-            }
+            numberOfEvents = events;
+            Debug.Log($"Set number_of_events: {events}");
         }
         else
         {
             Debug.LogWarning("Raw data missing number_of_events field");
+            numberOfEvents = "0";
         }
         
         if (rawData.TryGetValue("timestamp", out string timestampStr))
         {
-            // First try as a proper DateTime
             if (DateTime.TryParse(timestampStr, out DateTime parsedTimestamp))
             {
                 timestamp = parsedTimestamp;
@@ -257,80 +171,15 @@ public class EventMetrics
             }
             else
             {
-                // If not a valid date, just use current date/time
                 timestamp = DateTime.Now;
                 Debug.Log($"Timestamp value '{timestampStr}' is not a valid date. Using current time: {timestamp}");
             }
         }
         else
         {
-            // No timestamp provided, use current time
             timestamp = DateTime.Now;
             Debug.Log("No timestamp field found. Using current time: " + timestamp);
         }
-    }
-    
-    // Helper method to clean numeric strings for parsing
-    private string CleanNumericString(string input)
-    {
-        if (string.IsNullOrEmpty(input))
-            return "0";
-            
-        // Remove any non-digit characters
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        
-        // Handle negative numbers
-        bool isNegative = input.TrimStart().StartsWith("-");
-        
-        foreach (char c in input)
-        {
-            if (char.IsDigit(c))
-            {
-                sb.Append(c);
-            }
-        }
-        
-        // Apply negative sign if needed
-        string result = sb.ToString();
-        if (isNegative && result.Length > 0)
-            result = "-" + result;
-            
-        return result.Length > 0 ? result : "0";
-    }
-    
-    // Helper method to clean float strings for parsing
-    private string CleanFloatString(string input)
-    {
-        if (string.IsNullOrEmpty(input))
-            return "0";
-            
-        // Remove any non-digit characters except for decimal point
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        
-        // Handle negative numbers
-        bool isNegative = input.TrimStart().StartsWith("-");
-        bool hasDecimalPoint = false;
-        
-        foreach (char c in input)
-        {
-            if (char.IsDigit(c))
-            {
-                sb.Append(c);
-            }
-            else if ((c == '.' || c == ',') && !hasDecimalPoint)
-            {
-                // Convert any decimal separator to a period
-                sb.Append('.');
-                hasDecimalPoint = true;
-            }
-        }
-        
-        // Apply negative sign if needed
-        string result = sb.ToString();
-        if (isNegative && result.Length > 0)
-            result = "-" + result;
-            
-        return result.Length > 0 ? result : "0";
     }
 }
 
@@ -451,7 +300,7 @@ public class DataModelClasses : MonoBehaviour
             // Return the one with non-zero values if possible
             foreach (var metric in metrics)
             {
-                if (metric.InstagramFollowers > 0 || metric.TikTokFollowers > 0 || metric.TikTokLikes > 0)
+                if (metric.InstagramFollowers != "0" || metric.TikTokFollowers != "0" || metric.TikTokLikes != "0")
                 {
                     Debug.Log($"Using non-zero social media metric for {cityId}: " +
                              $"Instagram={metric.InstagramFollowers}, " +
@@ -496,7 +345,7 @@ public class DataModelClasses : MonoBehaviour
             // Return the one with non-zero values if possible
             foreach (var metric in metrics)
             {
-                if (metric.TicketsSold > 0 || metric.AverageAttendance > 0 || metric.NumberOfEvents > 0)
+                if (metric.TicketsSold != "0" || metric.AverageAttendance != "0" || metric.NumberOfEvents != "0")
                 {
                     Debug.Log($"Using non-zero event metric for {cityId}: " +
                              $"Tickets={metric.TicketsSold}, " +
