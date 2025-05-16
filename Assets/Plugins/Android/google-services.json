@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "685991127720",
+    "project_id": "bgsnl-dashboard",
+    "storage_bucket": "bgsnl-dashboard.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:685991127720:android:da02b236c7cd30ca0ab09d",
+        "android_client_info": {
+          "package_name": "com.DefaultCompany.GraduationProject_BGSNL_Dashbooard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "685991127720-s6kqoe1c14lfigmcn90hekpr3a8hv5j1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrZYpGE62mCSxT-oYlcVsqLQ63nIr1kVQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "685991127720-s6kqoe1c14lfigmcn90hekpr3a8hv5j1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
